@@ -30,7 +30,7 @@ options = {
     "appId": "YOUR_APP_ID",
     "publishableKey": "YOUR_PUBLISHABLE_KEY",
     "secretKey": "YOUR_SECRET_KEY",
-    "apiBaseUrl": "[https://api.mmpay.com](https://api.mmpay.com)" # Replace with actual API Base URL
+    "apiBaseUrl": "[https://xxx.myanmyanpay.com](https://xxx.myanmyanpay.com)" # Replace with actual API Base URL [ Register With Us]
 }
 
 sdk = MMPaySDK(options)
