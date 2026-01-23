@@ -4,8 +4,8 @@ import random
 import string
 from dotenv import load_dotenv
 
-from mmpay import MMPaySDK
-# from mmpay_sdk import MMPaySDK  # Assumes the SDK is saved in mmpay_sdk.py
+# from mmpay import MMPaySDK
+from mmpay import MMPaySDK  
 
 # Load environment variables from .env file
 load_dotenv()
