@@ -1,1 +1,5 @@
+dist 
+mmpay_python_sdk.egg-info 
+.git 
 .env
+.vscode

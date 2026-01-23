@@ -64,8 +64,8 @@ Passed to `sdk.pay(params)` or `sdk.sandbox_pay(params)`.
 | `orderId` | `str` | Yes | Unique identifier for the order (e.g., "ORD-001"). |
 | `amount` | `number` | Yes | Total transaction amount. |
 | `items` | `List[Item]` | Yes | A list of items included in the order (see table below). |
-| `currency` | `str` | No | Currency code (e.g., "MMK", "USD"). |
 | `callbackUrl` | `str` | No | URL where the webhook callback will be sent. |
+| `customMessage` | `str` | No | URL where the webhook callback will be sent. |
 
 ### 2. Item Object
 
@@ -83,8 +83,8 @@ try:
     payment_request = {
         "orderId": "ORD-SANDBOX-001",
         "amount": 5000,             # Amount in minor units (e.g., cents) or as required
-        "currency": "MMK",
-        "callbackUrl": "[https://your-site.com/webhook/mmpay](https://your-site.com/webhook/mmpay)",
+        "callbackUrl": "[https://your-site.com/webhook/mmpay](https://your-site.com/webhook/mmpay)", # Optional
+        "customMessage": "Your Custom Messages", # Optional
         "items": [
             {
                 "name": "Premium Subscription",
@@ -109,9 +109,15 @@ For production environments, use the `pay` method.
 try:
     payment_request = {
         "orderId": "ORD-LIVE-98765",
-        "amount": 10000,
+        "amount": 5000,             # Amount in minor units (e.g., cents) or as required
+        "callbackUrl": "[https://your-site.com/webhook/mmpay](https://your-site.com/webhook/mmpay)", # Optional
+        "customMessage": "Your Custom Messages", # Optional
         "items": [
-            {"name": "E-Commerce Item", "amount": 10000, "quantity": 1}
+            {
+                "name": "Premium Subscription",
+                "amount": 5000,
+                "quantity": 1
+            }
         ]
     }
 
@@ -144,6 +150,7 @@ from flask import request
 def mmpay_webhook():
     # 1. Get the raw payload body as a string (Crucial for signature check)
     payload_str = request.data.decode('utf-8') 
+    payload = request.data
     
     # 2. Get headers
     nonce = request.headers.get('X-Mmpay-Nonce')
@@ -155,6 +162,7 @@ def mmpay_webhook():
         
         if is_valid:
             # Process the order (e.g., mark as paid in DB)
+            
             return "Verified", 200
         else:
             return "Invalid Signature", 400
@@ -162,6 +170,28 @@ def mmpay_webhook():
     except ValueError as e:
         return str(e), 400
 ```
+
+
+### 4. Error Codes
+
+##### Api Key Layer Authentication [SERVER SDK]
+| Code | Description |
+| :--- | :--- |
+| **`KA0001`** | Bearer Token Not Included In Your Request |
+| **`KA0002`** | API Key Not 'LIVE' |
+| **`KA0003`** | Signature mismatch |
+| **`KA0004`** | Internal Server Error ( Talk to our support immediately fot this ) |
+| **`KA0005`** | IP Not whitelisted |
+| **`429`** | Ratelimit hit only 1000 request / minute allowed |
+
+
+##### JWT Layer Authentication [SERVER SDK]
+| Code | Description |
+| :--- | :--- |
+| **`BA001`** | `Btoken` is nonce one time token is not included |
+| **`BA002`** | `Btoken` one time nonce mismatch |
+| **`BA000`** | Internal Server Error ( Talk to our support immediately fot this ) |
+| **`429`**   | Ratelimit hit only 1000 request / minute allowed |
 
 
 ## License
