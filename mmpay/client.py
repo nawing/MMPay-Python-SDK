@@ -5,24 +5,27 @@ import hashlib
 import requests
 from typing import List, Optional, TypedDict, Dict, Any, Union
 
-# --- Type Definitions ---
-
 class Item(TypedDict):
     name: str
     amount: float
     quantity: int
 
-class PaymentRequest(TypedDict, total=False):
+class _PaymentRequestRequired(TypedDict):
     orderId: str
     amount: float
-    items: Optional[List[Item]]
-    currency: Optional[str]
-    callbackUrl: Optional[str]
-    customMessage: Optional[str]  # Added to match TS
 
-class XPaymentRequest(PaymentRequest, total=False):
+class PaymentRequest(_PaymentRequestRequired, total=False):
+    items: List[Item]
+    currency: str
+    callbackUrl: str
+    customMessage: str
+
+class _XPaymentRequestRequired(TypedDict):
     appId: str
     nonce: str
+
+class XPaymentRequest(PaymentRequest, _XPaymentRequestRequired):
+    pass
 
 class HandShakeRequest(TypedDict):
     orderId: str
@@ -49,25 +52,40 @@ class SDKOptions(TypedDict):
     secretKey: str
     apiBaseUrl: str
 
-# --- Main SDK Class ---
+class _PayGetRequestRequired(TypedDict):
+    orderId: str
+
+class PayGetRequest(_PayGetRequestRequired, total=False):
+    nonce: str
+
+class PayGetResponse(TypedDict, total=False):
+    appId: str
+    orderId: str
+    amount: float
+    vendor: str
+    method: str
+    customMessage: str
+    callbackUrl: str
+    callbackUrlStatus: str
+    callbackAt: str
+    disbursementId: str
+    disStatus: str
+    status: str
+    condition: str
+    createdAt: str
+    transactionRefId: str
+    qr: str
+    url: str
 
 class MMPaySDK:
     def __init__(self, options: SDKOptions):
-        """
-        Initializes the SDK with the merchant's keys and the API endpoint.
-        """
         self._app_id = options['appId']
         self._publishable_key = options['publishableKey']
         self._secret_key = options['secretKey']
-        # Remove trailing slash if present to prevent double slashes in endpoints
         self._api_base_url = options['apiBaseUrl'].rstrip('/')
         self._btoken: Optional[str] = None
 
     def _generate_signature(self, body_string: str, nonce: str) -> str:
-        """
-        Generates an HMAC SHA256 signature for request integrity.
-        Matches: CryptoJS.HmacSHA256(nonce + "." + bodyString, secret)
-        """
         string_to_sign = f"{nonce}.{body_string}"
         return hmac.new(
             self._secret_key.encode('utf-8'),
@@ -76,17 +94,10 @@ class MMPaySDK:
         ).hexdigest()
 
     def _get_nonce(self) -> str:
-        """Helper to get current timestamp as string (milliseconds)"""
         return str(int(time.time() * 1000))
 
     def _json_stringify(self, data: Any) -> str:
-        """
-        Mimics JS JSON.stringify exactly (no spaces).
-        Crucial for signature verification.
-        """
         return json.dumps(data, separators=(',', ':'))
-
-    # --- Sandbox Methods ---
 
     def sandbox_handshake(self, payload: HandShakeRequest) -> Union[HandShakeResponse, Dict[str, Any]]:
         endpoint = f"{self._api_base_url}/payments/sandbox-handshake"
@@ -116,9 +127,6 @@ class MMPaySDK:
         endpoint = f"{self._api_base_url}/payments/sandbox-create"
         nonce = self._get_nonce()
 
-        # Construct payload
-        # Note: We manually build the dict to ensure we don't include None/null 
-        # for optional fields, which would break the signature vs JS stringify.
         xpayload: Dict[str, Any] = {
             "appId": self._app_id,
             "nonce": nonce,
@@ -126,17 +134,16 @@ class MMPaySDK:
             "orderId": params['orderId'],
         }
 
-        if params.get('items'):
+        if 'items' in params:
             xpayload['items'] = params['items']
-        if params.get('callbackUrl'):
+        if 'callbackUrl' in params:
             xpayload['callbackUrl'] = params['callbackUrl']
-        if params.get('customMessage'):
+        if 'customMessage' in params:
             xpayload['customMessage'] = params['customMessage']
 
         body_string = self._json_stringify(xpayload)
         signature = self._generate_signature(body_string, nonce)
 
-        # Perform handshake first (using the nonce from the payload logic as per TS)
         handshake_payload: HandShakeRequest = {
             'orderId': str(xpayload['orderId']), 
             'nonce': str(xpayload['nonce'])
@@ -148,7 +155,7 @@ class MMPaySDK:
 
         headers = {
             'Authorization': f"Bearer {self._publishable_key}",
-            'X-Mmpay-Btoken': self._btoken,
+            'X-Mmpay-Btoken': self._btoken or '',
             'X-Mmpay-Nonce': nonce,
             'X-Mmpay-Signature': signature,
             'Content-Type': 'application/json',
@@ -161,7 +168,41 @@ class MMPaySDK:
         except requests.exceptions.RequestException as e:
             return {"error": str(e), "details": getattr(e.response, 'text', '')}
 
-    # --- Production Methods ---
+    def sandbox_get(self, params: PayGetRequest) -> Union[PayGetResponse, Dict[str, Any]]:
+        endpoint = f"{self._api_base_url}/payments/sandbox-get"
+        nonce = self._get_nonce()
+
+        xpayload: Dict[str, Any] = {
+            "orderId": params['orderId'],
+            "nonce": nonce
+        }
+
+        body_string = self._json_stringify(xpayload)
+        signature = self._generate_signature(body_string, nonce)
+
+        handshake_payload: HandShakeRequest = {
+            'orderId': str(xpayload['orderId']),
+            'nonce': str(xpayload['nonce'])
+        }
+
+        handshake_res = self.sandbox_handshake(handshake_payload)
+        if 'error' in handshake_res:
+            return handshake_res
+
+        headers = {
+            'Authorization': f"Bearer {self._publishable_key}",
+            'X-Mmpay-Btoken': self._btoken or '',
+            'X-Mmpay-Nonce': nonce,
+            'X-Mmpay-Signature': signature,
+            'Content-Type': 'application/json',
+        }
+
+        try:
+            response = requests.post(endpoint, data=body_string, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"error": str(e), "details": getattr(e.response, 'text', '')}
 
     def handshake(self, payload: HandShakeRequest) -> Union[HandShakeResponse, Dict[str, Any]]:
         endpoint = f"{self._api_base_url}/payments/handshake"
@@ -198,17 +239,16 @@ class MMPaySDK:
             "orderId": params['orderId'],
         }
 
-        if params.get('items'):
+        if 'items' in params:
             xpayload['items'] = params['items']
-        if params.get('callbackUrl'):
+        if 'callbackUrl' in params:
             xpayload['callbackUrl'] = params['callbackUrl']
-        if params.get('customMessage'):
+        if 'customMessage' in params:
             xpayload['customMessage'] = params['customMessage']
 
         body_string = self._json_stringify(xpayload)
         signature = self._generate_signature(body_string, nonce)
 
-        # Perform handshake
         handshake_payload: HandShakeRequest = {
             'orderId': str(xpayload['orderId']), 
             'nonce': str(xpayload['nonce'])
@@ -220,7 +260,7 @@ class MMPaySDK:
 
         headers = {
             'Authorization': f"Bearer {self._publishable_key}",
-            'X-Mmpay-Btoken': self._btoken,
+            'X-Mmpay-Btoken': self._btoken or '',
             'X-Mmpay-Nonce': nonce,
             'X-Mmpay-Signature': signature,
             'Content-Type': 'application/json',
@@ -233,12 +273,43 @@ class MMPaySDK:
         except requests.exceptions.RequestException as e:
             return {"error": str(e), "details": getattr(e.response, 'text', '')}
 
-    # --- Verification ---
+    def get(self, params: PayGetRequest) -> Union[PayGetResponse, Dict[str, Any]]:
+        endpoint = f"{self._api_base_url}/payments/get"
+        nonce = self._get_nonce()
+
+        xpayload: Dict[str, Any] = {
+            "orderId": params['orderId'],
+            "nonce": nonce
+        }
+
+        body_string = self._json_stringify(xpayload)
+        signature = self._generate_signature(body_string, nonce)
+
+        handshake_payload: HandShakeRequest = {
+            'orderId': str(xpayload['orderId']),
+            'nonce': str(xpayload['nonce'])
+        }
+
+        handshake_res = self.handshake(handshake_payload)
+        if 'error' in handshake_res:
+            return handshake_res
+
+        headers = {
+            'Authorization': f"Bearer {self._publishable_key}",
+            'X-Mmpay-Btoken': self._btoken or '',
+            'X-Mmpay-Nonce': nonce,
+            'X-Mmpay-Signature': signature,
+            'Content-Type': 'application/json',
+        }
+
+        try:
+            response = requests.post(endpoint, data=body_string, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"error": str(e), "details": getattr(e.response, 'text', '')}
 
     def verify_cb(self, payload: str, nonce: str, expected_signature: str) -> bool:
-        """
-        Verifies the signature of a callback request.
-        """
         if not payload or not nonce or not expected_signature:
             raise ValueError("Callback verification failed: Missing payload, nonce, or signature.")
 
@@ -250,7 +321,6 @@ class MMPaySDK:
         ).hexdigest()
 
         if generated_signature != expected_signature:
-            # Using print for logging as per TS console.error
             print(f"Signature mismatch: gen={generated_signature}, exp={expected_signature}")
             return False
         

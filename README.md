@@ -1,91 +1,81 @@
-
 # MMPay Python SDK
 
-A Python client library for integrating with the MMPay Payment Gateway. This SDK is a direct port of the official Node.js SDK, providing utilities for payment creation, handshake authentication, and callback verification.
+A Python client library for integrating with the MMPay Payment Gateway. This SDK is a direct port of the official Node.js SDK, providing utilities for payment creation, transaction retrieval, handshake authentication, and callback verification for technical architects and developers.
 
 ## Features
 
-- **Sandbox & Production Support**: dedicated methods for both environments.
-- **HMAC SHA256 Signing**: Automatic signature generation for request integrity.
-- **Callback Verification**: Utility to verify incoming webhooks from MMPay.
-- **Type Definitions**: Includes `TypedDict` definitions for clear payload structuring.
+- Sandbox & Production Support: Dedicated methods for both environments.
+- Payment Creation & Retrieval: Endpoints to create payments and fetch transaction statuses.
+- HMAC SHA256 Signing: Automatic signature generation for request integrity.
+- Callback Verification: Utility to verify incoming webhooks from MMPay.
+- Type Definitions: Includes TypedDict definitions for clear payload structuring.
 
 ## Installation
 
-Install the package via pip:
-
-```bash
-pip install mmpay-python-sdk
+```bash 
+pip install mmpay-python-sdk 
 ```
 
 ## Configuration
 
-To use the SDK, you need your **App ID**, **Publishable Key**, and **Secret Key** provided by the MMPay dashboard.
-
-Used when instantiating `MMPaySDK(options)`.
+To use the SDK, you need your App ID, Publishable Key, and Secret Key provided by the MyanMyanPay dashboard.
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `appId` | `str` | Yes | Your unique Application ID. |
-| `publishableKey` | `str` | Yes | Public key for authentication. |
-| `secretKey` | `str` | Yes | Private key used for signing requests (HMAC). |
-| `apiBaseUrl` | `str` | Yes | The base URL for the MMPay API. |
+| appId | str | Yes | Your unique Application ID. |
+| publishableKey | str | Yes | Public key for authentication. |
+| secretKey | str | Yes | Private key used for signing requests (HMAC). |
+| apiBaseUrl | str | Yes | The base URL for the MMPay API. |
+
 
 ```python
 from mmpay import MMPaySDK
 
-# Initialize the SDK
 options = {
     "appId": "YOUR_APP_ID",
     "publishableKey": "YOUR_PUBLISHABLE_KEY",
     "secretKey": "YOUR_SECRET_KEY",
-    "apiBaseUrl": "[https://xxx.myanmyanpay.com](https://xxx.myanmyanpay.com)" # Replace with actual API Base URL [ Register With Us]
+    "apiBaseUrl": "https://xxx.myanmyanpay.com"
 }
 
 sdk = MMPaySDK(options)
 ```
 
-
-
-
 ## Usage
 
-### 1. Create a Payment (Sandbox)
-
-Use `sandbox_pay` to create a payment order in the Sandbox environment. This handles the handshake and signature generation automatically.
-
-
-### 1. Payment Request (`pay` / `sandbox_pay`)
+### 1. Payment Request Payload
 
 Passed to `sdk.pay(params)` or `sdk.sandbox_pay(params)`.
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `orderId` | `str` | Yes | Unique identifier for the order (e.g., "ORD-001"). |
-| `amount` | `number` | Yes | Total transaction amount. |
-| `items` | `List[Item]` | Yes | A list of items included in the order (see table below). |
+| `amount` | `float` | Yes | Total transaction amount. |
+| `items` | `List[Item]` | No | A list of items included in the order. |
 | `callbackUrl` | `str` | No | URL where the webhook callback will be sent. |
-| `customMessage` | `str` | No | URL where the webhook callback will be sent. |
+| `customMessage` | `str` | No | Custom message to be attached to the transaction. |
 
-### 2. Item Object
+**Item Object**
 
 Used inside the `items` list of a Payment Request.
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `name` | `str` | Yes | Name of the product or service. |
-| `amount` | `number` | Yes | Price per unit. |
+| `name` | `str` | Yes | Name of the product/service. |
+| `amount` | `float` | Yes | Price per unit. |
 | `quantity` | `int` | Yes | Quantity of the item. |
+
+### 2. Create a Payment (Sandbox)
 
 
 ```python
 try:
     payment_request = {
         "orderId": "ORD-SANDBOX-001",
-        "amount": 5000,             # Amount in minor units (e.g., cents) or as required
-        "callbackUrl": "https://your-site.com/webhook/mmpay", # Optional
-        "customMessage": "Your Custom Messages", # Optional
-        "items": [  # Optional
+        "amount": 5000,
+        "callbackUrl": "https://your-site.com/webhook/mmpay",
+        "customMessage": "Your Custom Message",
+        "items": [
             {
                 "name": "Premium Subscription",
                 "amount": 5000,
@@ -95,24 +85,50 @@ try:
     }
 
     response = sdk.sandbox_pay(payment_request)
-    print("Payment Response:", response)
+    print(response)
 
 except Exception as e:
-    print("Error creating payment:", e)
+    print(e)
 ```
 
-### 2. Create a Payment (Production)
+### 3. Retrieve a Payment 
 
-For production environments, use the `pay` method.
+```python
+#(Sandbox)
+try:
+    get_request = {
+        "orderId": "ORD-SANDBOX-001"
+    }
+
+    response = sdk.sandbox_get(get_request)
+    print(response)
+
+except Exception as e:
+    print(e)
+```
+
+
+```python
+#(Production)
+try:
+    get_request = {
+        "orderId": "ORD-SANDBOX-001"
+    }
+
+    response = sdk.get(get_request)
+    print(response)
+```
+
+### 4. Create a Payment (Production)
 
 ```python
 try:
     payment_request = {
         "orderId": "ORD-LIVE-98765",
-        "amount": 5000,             # Amount in minor units (e.g., cents) or as required
-        "callbackUrl": "https://your-site.com/webhook/mmpay", # Optional
-        "customMessage": "Your Custom Messages", # Optional
-        "items": [  # Optional
+        "amount": 5000,
+        "callbackUrl": "https://your-site.com/webhook/mmpay",
+        "customMessage": "Your Custom Message",
+        "items": [
             {
                 "name": "Premium Subscription",
                 "amount": 5000,
@@ -121,67 +137,41 @@ try:
         ]
     }
 
-    # Helper automatically handles the handshake and signing
     response = sdk.pay(payment_request)
-    print("Production Payment URL:", response.get('url'))
+    print(response.get('url'))
 
 except Exception as e:
-    print("Error:", e)
+    print(e)
 ```
 
-### 3. Verify Callback (Webhook)
+### 5. Verify Callback (Webhook)
 
-When MMPay sends a callback to your `callbackUrl`, you must verify the request signature to ensure it is genuine. If not provide, it will fallback to default cb URL provided in your console
+When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 
-**Handling callbacks**
-
-Incoming HTTP POST Parameters
-
-Header
+**Incoming Headers**
 
 | Field Name | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| **Content-Type** | `string` | Yes | 'application/json' |
-| **X-Mmpay-Signature** | `string` | Yes | '34834890vfgh9hnf94irfg_48932i4rt90349849' |
-| **X-Mmpay-Nonce** | `string` | Yes | '94843943949349' |
+| `Content-Type` | `str` | Yes | `application/json` |
+| `X-Mmpay-Signature` | `str` | Yes | Generated HMAC signature |
+| `X-Mmpay-Nonce` | `str` | Yes | Unique nonce string |
 
-Body
+**Example Verification (Flask)**
 
-| Field Name    | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| **orderId**           | `string` | Yes | Unique identifier for the specific order. |
-| **amount**            | `number` | Yes | The transaction amount. |
-| **currency**          | `string` | Yes | The 3-letter currency code (e.g., MMK, USD). |
-| **vendor**            | `string` | Yes | Identifier for the vendor initiating the request. |
-| **method**            | `'QR', 'PIN', 'PWA', 'CARD'`  | Yes | Identifier for the method. |
-| **status**            | `'PENDING','SUCCESS','FAILED','REFUNDED'` | Yes | Current status of the transaction. |
-| **transactionRefId**  | `string` | Yes | The reference ID generated by the payment provider. |
-| **callbackUrl**       | `string` | No | Optional URL to receive webhooks or updates. |
-| **customMessage**     | `string` | No | User provided custom message |
-
-
-**Example using Flask:**
 
 ```python
 from flask import request
 
 @app.route('/webhook/mmpay', methods=['POST'])
 def mmpay_webhook():
-    # 1. Get the raw payload body as a string (Crucial for signature check)
-    payload_str = request.data.decode('utf-8') 
-    payload = request.data
-    
-    # 2. Get headers
+    payload_str = request.data.decode('utf-8')
     nonce = request.headers.get('X-Mmpay-Nonce')
     signature = request.headers.get('X-Mmpay-Signature')
 
     try:
-        # 3. Verify
         is_valid = sdk.verify_cb(payload_str, nonce, signature)
         
         if is_valid:
-            # Process the order (e.g., mark as paid in DB)
-            
             return "Verified", 200
         else:
             return "Invalid Signature", 400
@@ -190,28 +180,25 @@ def mmpay_webhook():
         return str(e), 400
 ```
 
+## Error Codes
 
-### 4. Error Codes
+### API Key Layer (SERVER SDK)
 
-##### Api Key Layer Authentication [SERVER SDK]
 | Code | Description |
 | :--- | :--- |
-| **`KA0001`** | Bearer Token Not Included In Your Request |
-| **`KA0002`** | API Key Not 'LIVE' |
-| **`KA0003`** | Signature mismatch |
-| **`KA0004`** | Internal Server Error ( Talk to our support immediately fot this ) |
-| **`KA0005`** | IP Not whitelisted |
-| **`429`** | Ratelimit hit only 1000 request / minute allowed |
+| `KA0001` | Bearer Token Not Included |
+| `KA0002` | API Key Not 'LIVE' |
+| `KA0003` | Signature mismatch |
+| `KA0004` | Internal Server Error |
+| `KA0005` | IP Not whitelisted |
+| `429` | Rate limit hit (1000 req/min) |
 
+### JWT Layer (SERVER SDK)
 
-##### JWT Layer Authentication [SERVER SDK]
 | Code | Description |
 | :--- | :--- |
-| **`BA001`** | `Btoken` is nonce one time token is not included |
-| **`BA002`** | `Btoken` one time nonce mismatch |
-| **`BA000`** | Internal Server Error ( Talk to our support immediately fot this ) |
-| **`429`**   | Ratelimit hit only 1000 request / minute allowed |
-
+| `BA001` | `Btoken` nonce token missing |
+| `BA002` | `Btoken` nonce mismatch |
 
 ## License
 
