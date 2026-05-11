@@ -8,7 +8,7 @@ long_description = (here / "README.md").read_text(encoding="utf-8")
 setup(
     name="mmpay-python-sdk",
     version="0.1.2",
-    description="Python SDK for MyanMyanPay (Ported from JS)",
+    description="Python SDK for MyanMyanPay",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Naw Ing",
