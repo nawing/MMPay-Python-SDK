@@ -84,7 +84,9 @@ try:
     }
 
     response = sdk.pay(payment_request)
-    print(response.get('url'))
+    print(response.get('qr')) # this is your QR String [EMVCo String]
+    print(response.get('orderId')) #this is your order ID
+    print(response.get('transactionRefId')) #this is your QR Reference No
 
 except Exception as e:
     print(e)
