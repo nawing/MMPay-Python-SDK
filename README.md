@@ -84,9 +84,11 @@ try:
     }
 
     response = sdk.pay(payment_request)
+    
     print(response.get('qr')) # this is your QR String [EMVCo String]
     print(response.get('orderId')) #this is your order ID
     print(response.get('transactionRefId')) #this is your QR Reference No
+    print(response.get('amount')) #this is your requested amount
 
 except Exception as e:
     print(e)
@@ -102,6 +104,9 @@ try:
 
     response = sdk.get(get_request)
     print(response)
+
+except Exception as e:
+    print(e)
 ```
 
 ### 4. Handling Webhooks
