@@ -65,61 +65,7 @@ Used inside the `items` list of a Payment Request.
 | `amount` | `float` | Yes | Price per unit. |
 | `quantity` | `int` | Yes | Quantity of the item. |
 
-### 2. Create a Payment (Sandbox)
-
-
-```python
-try:
-    payment_request = {
-        "orderId": "ORD-SANDBOX-001",
-        "amount": 5000,
-        "callbackUrl": "https://your-site.com/webhook/mmpay",
-        "customMessage": "Your Custom Message",
-        "items": [
-            {
-                "name": "Premium Subscription",
-                "amount": 5000,
-                "quantity": 1
-            }
-        ]
-    }
-
-    response = sdk.sandbox_pay(payment_request)
-    print(response)
-
-except Exception as e:
-    print(e)
-```
-
-### 3. Retrieve a Payment 
-
-```python
-#(Sandbox)
-try:
-    get_request = {
-        "orderId": "ORD-SANDBOX-001"
-    }
-
-    response = sdk.sandbox_get(get_request)
-    print(response)
-
-except Exception as e:
-    print(e)
-```
-
-
-```python
-#(Production)
-try:
-    get_request = {
-        "orderId": "ORD-SANDBOX-001"
-    }
-
-    response = sdk.get(get_request)
-    print(response)
-```
-
-### 4. Create a Payment (Production)
+### 2. Create a Payment
 
 ```python
 try:
@@ -144,7 +90,99 @@ except Exception as e:
     print(e)
 ```
 
-### 5. Verify Callback (Webhook)
+### 3. Retrieve a Payment 
+
+```python
+try:
+    get_request = {
+        "orderId": "ORD-SANDBOX-001"
+    }
+
+    response = sdk.get(get_request)
+    print(response)
+```
+
+### 4. Handling Webhooks
+
+When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
+When you implement this method, our package automatically process the Hmac verification  
+
+**Incoming Headers**
+
+| Field Name | Type | Required | Description |
+| :--- | :--- | :--- | :--- |
+| `Content-Type` | `str` | Yes | `application/json` |
+| `X-Mmpay-Signature` | `str` | Yes | Generated HMAC signature |
+| `X-Mmpay-Nonce` | `str` | Yes | Unique nonce string |
+
+```python
+
+from mmpay.client import MMPaySDK
+
+sdk = MMPaySDK({
+    'appId': 'your_app_id',
+    'publishableKey': 'pk_test_12345',
+    'secretKey': 'your_secret_key',
+    'apiBaseUrl': 'https://api.myanmyanpay.com'
+})
+
+def handle_create(tx):
+    print("Created:", tx.get('orderId'))
+
+def handle_success(tx):
+    print("Success:", tx.get('orderId'))
+
+def handle_fail(tx):
+    print("Failed:", tx.get('orderId'))
+
+def handle_refund(tx):
+    print("Refunded:", tx.get('orderId'))
+
+def handle_cancel(tx):
+    print("Cancelled:", tx.get('orderId'))
+
+def handle_expire(tx):
+    print("Expired:", tx.get('orderId'))
+
+def handle_heartbeat(tx):
+    print("Heartbeat:", tx.get('orderId'))
+
+def handle_unknown(tx):
+    print("Unknown:", tx.get('status'))
+
+def handle_error(error):
+    print("Error:", error)
+
+sdk.on_tx_create(handle_create)
+sdk.on_tx_success(handle_success)
+sdk.on_tx_fail(handle_fail)
+sdk.on_tx_refund(handle_refund)
+sdk.on_tx_cancel(handle_cancel)
+sdk.on_tx_expire(handle_expire)
+sdk.on_heartbeat(handle_heartbeat)
+sdk.on('tx:unknown', handle_unknown)
+sdk.on('error', handle_error)
+
+
+@app.route('/webhooks/mmpay', methods=['POST'])
+def mmpay_webhook():
+    payload_str = request.data.decode('utf-8')
+    nonce = request.headers.get('X-Mmpay-Nonce')
+    signature = request.headers.get('X-Mmpay-Signature')
+
+    if not nonce or not signature:
+        return jsonify({"error": "Missing headers"}), 400
+
+    sdk.listen(payload_str, nonce, signature)
+    
+    return jsonify({"received": True}), 200
+
+if __name__ == '__main__':
+    app.run(port=5000)
+
+```
+
+### 5. Verify Callback (Manually)
 
 When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 
@@ -162,7 +200,7 @@ When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verif
 ```python
 from flask import request
 
-@app.route('/webhook/mmpay', methods=['POST'])
+@app.route('/webhooks/mmpay', methods=['POST'])
 def mmpay_webhook():
     payload_str = request.data.decode('utf-8')
     nonce = request.headers.get('X-Mmpay-Nonce')
