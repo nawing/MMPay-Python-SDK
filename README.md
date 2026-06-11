@@ -255,8 +255,9 @@ MMPay = MMPaySDK({
 
 def handle_create(tx):
     # if you are using browser plugin MMPay.showPaymentModal() 
-    # Verify your source of truth here
-    # if the amount does not match cancel the QR instantly, to avoid payload manipulation attacks
+    # verify your source of truth here, you can do with an encrypted message in customMessage or just match the amount of order reqest
+    # if the amount does not match 'CANCEL' the order immediately, to avoid payload manipulation attacks
+    # MMPay.cancel( tx.orderId ) 
     print("Created:", tx.get('orderId'))
 
 def handle_success(tx):
