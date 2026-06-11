@@ -41,6 +41,7 @@ options = {
 
 MMPay = MMPaySDK(options)
 ```
+
 ----
 
 
@@ -52,28 +53,6 @@ from mmpay.types import PaymentRequest
 payload: PaymentRequest = {}
 MMPay.pay(payload)
 ```
-
-**Request Body** (`payload` structure)
-
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `orderId` | `str` | Yes | Unique identifier for the order (e.g., "ORD-001"). |
-| `amount` | `float` | Yes | Total transaction amount. |
-| `currency` | `str` | No | Currency of the transaction 'Only Support MMK for now' |
-| `items` | `List[Item]` | No | A list of items included in the order. |
-| `callbackUrl` | `str` | No | URL where the webhook callback will be sent. |
-| `customMessage` | `str` | No | Custom message to be attached to the transaction. |
-
-**Item Object**
-
-Used inside the `items` list of a Payment Request.
-
-| Parameter | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `name` | `str` | Yes | Name of the product/service. |
-| `amount` | `float` | Yes | Price per unit. |
-| `quantity` | `int` | Yes | Quantity of the item. |
-
 
 **Implementation**
 
@@ -107,7 +86,29 @@ except Exception as e:
     print(e)
 ```
 
+**Request Body** (`payload` structure)
+The request body should be a JSON object containing the transaction details.
+
+| Field | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
+| **`amount`**          | `number` | **Yes**    | The total transaction amount. | `1500.50` |
+| **`callbackUrl`**     | `string` | No         | The URL where the payment gateway will send transaction status updates. | `"https://yourserver.com/webhook"` |
+| **`currency`**        | `string` | No         | The currency code (e.g., `'MMK'`). | `"MMK"` |
+| **`customMessage`**   | `string` | No         | Your Customization String |
+| **`items`**           | `Array<Object>` | No  | List of items included in the purchase. | `[{name: "Hat", amount: 1000, quantity: 1}]` |
+
+**Item Object**
+
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| **`name`** | `string` | The name of the item. |
+| **`amount`** | `number` | The unit price of the item. |
+| **`quantity`** | `number` | The number of units purchased. |
+
 **Response Body** Code (`201`)
+The response body should be a JSON object containing the following information.
 
 ```json
 {
@@ -120,6 +121,7 @@ except Exception as e:
   "qr": "EMVco MMQR String => You_have_to_embed_as_qr_image_yourself"
 }
 ```
+
 ---
 
 
@@ -131,15 +133,6 @@ from mmpay.types import PayGetRequest
 payload: PayGetRequest = {}
 MMPay.get(payload)
 ```
-
-**Request Body** (`payload` structure)
-
-The request body should be a JSON object containing the transaction details.
-
-| Field | Type | Required | Description | Example |
-| :--- | :--- | :--- | :--- | :--- |
-| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
-
 
 **Implementation**
 ```python
@@ -157,7 +150,15 @@ except Exception as e:
     print(e)
 ```
 
+**Request Body** (`payload` structure)
+The request body should be a JSON object containing the transaction details.
+
+| Field | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
+
 **Response Body** Code (`200`)
+The response body should be a JSON object containing the following information.
 
 ```json
 {
@@ -192,14 +193,6 @@ payload: PayCancelRequest = {}
 MMPay.cancel(payload)
 ```
 
-**Request Body** (`payload` structure)
-
-The request body should be a JSON object containing the transaction details.
-
-| Field | Type | Required | Description | Example |
-| :--- | :--- | :--- | :--- | :--- |
-| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
-
 **Implementation**
 ```python
 from mmpay.types import PayCancelRequest
@@ -216,7 +209,16 @@ except Exception as e:
     print(e)
 ```
 
+**Request Body** (`payload` structure)
+The request body should be a JSON object containing the transaction details.
+
+| Field | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
+
 **Response Body** Code (`200`)
+The response body should be a JSON object containing the following information.
+
 ```json
 {
   "amount": 1000,
@@ -331,7 +333,10 @@ if __name__ == '__main__':
 
 ```
 
-### 5. Verify Callback (Manually)
+----
+
+
+### 7. Verify Callback (Manually)
 
 When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 
@@ -358,7 +363,10 @@ def mmpay_webhook():
         return str(e), 400
 ```
 
-## 7. Error Codes
+----
+
+
+## 8. Error Codes
 
 ### API Key Layer (SERVER Side)
 
