@@ -10,13 +10,13 @@ A Python client library for integrating with the MMPay Payment Gateway. This SDK
 - Callback Verification: Utility to verify incoming webhooks from MMPay.
 - Type Definitions: Includes TypedDict definitions for clear payload structuring.
 
-## Installation
+## ⬇️ 1. Installation
 
 ```bash 
 pip install mmpay-python-sdk 
 ```
 
-## Configuration
+## ⚙️ 2. Configuration
 
 To use the SDK, you need your App ID, Publishable Key, and Secret Key provided by the MyanMyanPay dashboard.
 
@@ -27,7 +27,7 @@ To use the SDK, you need your App ID, Publishable Key, and Secret Key provided b
 | secretKey | str | Yes | Private key used for signing requests (HMAC). |
 | apiBaseUrl | str | Yes | The base URL for the MMPay API. |
 
-#### **Implementation**
+**Implementation**
 
 ```python
 from mmpay import MMPaySDK
@@ -43,18 +43,17 @@ MMPay = MMPaySDK(options)
 ```
 ----
 
-## Usage
 
-### 1. Payment Request Payload
+## 💳 3. Make Payment
 
-#### **Method Signature**
+**Method Signature**
 ```python
 from mmpay.types import PaymentRequest
 payload: PaymentRequest = {}
 MMPay.pay(payload)
 ```
 
-#### **Request Body** (`payload` structure)
+**Request Body** (`payload` structure)
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
@@ -76,7 +75,7 @@ Used inside the `items` list of a Payment Request.
 | `quantity` | `int` | Yes | Quantity of the item. |
 
 
-#### **Implementation**
+**Implementation**
 
 ```python
 from mmpay.types import PaymentRequest
@@ -108,7 +107,7 @@ except Exception as e:
     print(e)
 ```
 
-#### **Response Body** Code (`201`)
+**Response Body** Code (`201`)
 
 ```json
 {
@@ -124,16 +123,16 @@ except Exception as e:
 ---
 
 
-### 2. Retrieve a Payment
+## 🚀 4. Retrieve Payment Information
 
-#### **Method Signature**
+**Method Signature**
 ```python
 from mmpay.types import PayGetRequest
 payload: PayGetRequest = {}
 MMPay.get(payload)
 ```
 
-#### **Request Body** (`payload` structure)
+**Request Body** (`payload` structure)
 
 The request body should be a JSON object containing the transaction details.
 
@@ -142,7 +141,7 @@ The request body should be a JSON object containing the transaction details.
 | **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
 
 
-#### **Implementation**
+**Implementation**
 ```python
 from mmpay.types import PayGetRequest
 
@@ -158,7 +157,7 @@ except Exception as e:
     print(e)
 ```
 
-#### **Response Body** Code (`200`)
+**Response Body** Code (`200`)
 
 ```json
 {
@@ -184,16 +183,16 @@ except Exception as e:
 
 ----
 
-### 3. Cancel a Payment 
+## 🚀 5. Cancel Payment
 
-#### **Method Signature**
+**Method Signature**
 ```python
 from mmpay.types import PayCancelRequest
 payload: PayCancelRequest = {}
 MMPay.cancel(payload)
 ```
 
-#### **Request Body** (`payload` structure)
+**Request Body** (`payload` structure)
 
 The request body should be a JSON object containing the transaction details.
 
@@ -201,7 +200,7 @@ The request body should be a JSON object containing the transaction details.
 | :--- | :--- | :--- | :--- | :--- |
 | **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
 
-#### **Implementation**
+**Implementation**
 ```python
 from mmpay.types import PayCancelRequest
 
@@ -217,7 +216,7 @@ except Exception as e:
     print(e)
 ```
 
-#### **Response Body** Code (`200`)
+**Response Body** Code (`200`)
 ```json
 {
   "amount": 1000,
@@ -230,12 +229,12 @@ except Exception as e:
 ----
 
 
-### 4. Handling Webhooks
+## 🔐 6. Handling Webhooks
 
 When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 When you implement this method, our package automatically process the Hmac verification  
 
-#### **Incoming Headers**
+**Incoming Headers**
 
 | Field Name | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
@@ -243,7 +242,7 @@ When you implement this method, our package automatically process the Hmac verif
 | `X-Mmpay-Signature` | `str` | Yes | Generated HMAC signature |
 | `X-Mmpay-Nonce` | `str` | Yes | Unique nonce string |
 
-#### **Incoming Body**
+**Incoming Body**
 
 | Field Name    | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
@@ -259,7 +258,7 @@ When you implement this method, our package automatically process the Hmac verif
 | **callbackUrl**       | `string` | No | Optional URL to receive webhooks or updates. |
 | **customMessage**     | `string` | No | User provided custom message |
 
-#### **Example Implementation With Flask**
+**Example Implementation With Flask**
 
 ```python
 
@@ -336,7 +335,7 @@ if __name__ == '__main__':
 
 When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 
-#### **Example Implementation With Flask**
+**Example Implementation With Flask**
 
 ```python
 from flask import request
@@ -359,7 +358,7 @@ def mmpay_webhook():
         return str(e), 400
 ```
 
-## Error Codes
+## 7. Error Codes
 
 ### API Key Layer (SERVER Side)
 
