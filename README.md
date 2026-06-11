@@ -79,7 +79,6 @@ except Exception as e:
 ```
 
 **Request Body** (`payload` structure)
-The request body should be a JSON object containing the transaction details.
 
 | Field | Type | Required | Description | Example |
 | :--- | :--- | :--- | :--- | :--- |
@@ -92,15 +91,14 @@ The request body should be a JSON object containing the transaction details.
 
 **Item Object**
 
-
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | **`name`** | `string` | The name of the item. |
 | **`amount`** | `number` | The unit price of the item. |
 | **`quantity`** | `number` | The number of units purchased. |
 
+
 **Response Body** Code (`201`)
-The response body should be a JSON object containing the following information.
 
 ```json
 {
@@ -143,14 +141,12 @@ except Exception as e:
 ```
 
 **Request Body** (`payload` structure)
-The request body should be a JSON object containing the transaction details.
 
 | Field | Type | Required | Description | Example |
 | :--- | :--- | :--- | :--- | :--- |
 | **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
 
 **Response Body** Code (`200`)
-The response body should be a JSON object containing the following information.
 
 ```json
 {
@@ -202,14 +198,13 @@ except Exception as e:
 ```
 
 **Request Body** (`payload` structure)
-The request body should be a JSON object containing the transaction details.
 
 | Field | Type | Required | Description | Example |
 | :--- | :--- | :--- | :--- | :--- |
 | **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
 
+
 **Response Body** Code (`200`)
-The response body should be a JSON object containing the following information.
 
 ```json
 {
@@ -328,7 +323,7 @@ if __name__ == '__main__':
 ----
 
 
-### 7. Verify Callback (Manually)
+## 💡 7. Verify Callback (Manually)
 
 When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 
@@ -358,7 +353,7 @@ def mmpay_webhook():
 ----
 
 
-## 8. Error Codes
+## 💡 8. Error Codes
 
 **HMac Layer (SERVER Side)**
 
