@@ -3,6 +3,7 @@ import os
 import random
 import string
 from dotenv import load_dotenv
+from mmpay.types import PaymentRequest
 
 # from mmpay import MMPaySDK
 from mmpay import MMPaySDK  
@@ -40,7 +41,7 @@ def start():
     start_time = time.perf_counter()
 
     try:
-        payload = {
+        payload: PaymentRequest = {
             "orderId": order_id,
             "amount": 1500,
             "customMessage": "MyanMyanPay Is The Best",
@@ -48,7 +49,7 @@ def start():
         }
 
         # Execute Payment (Synchronous in Python version)
-        response = mmpay.sandbox_pay(payload)
+        response = mmpay.pay(payload)
 
         # End Timer
         end_time = time.perf_counter()

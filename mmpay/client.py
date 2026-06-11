@@ -3,79 +3,19 @@ import json
 import hmac
 import hashlib
 import requests
-from typing import List, Optional, TypedDict, Dict, Any, Union, Callable
-
-class Item(TypedDict):
-    name: str
-    amount: float
-    quantity: int
-
-class _PaymentRequestRequired(TypedDict):
-    orderId: str
-    amount: float
-
-class PaymentRequest(_PaymentRequestRequired, total=False):
-    items: List[Item]
-    currency: str
-    callbackUrl: str
-    customMessage: str
-
-class _XPaymentRequestRequired(TypedDict):
-    appId: str
-    nonce: str
-
-class XPaymentRequest(PaymentRequest, _XPaymentRequestRequired):
-    pass
-
-class HandShakeRequest(TypedDict):
-    orderId: str
-    nonce: str
-
-class HandShakeResponse(TypedDict):
-    token: str
-
-class CallbackIncomingData(TypedDict):
-    orderId: str
-    amount: float
-    method: str
-    currency: str
-    vendor: str
-    status: str
-    condition: str
-    transactionRefId: str
-    callbackUrl: Optional[str]
-    customMessage: Optional[str]
-
-class SDKOptions(TypedDict):
-    appId: str
-    publishableKey: str
-    secretKey: str
-    apiBaseUrl: str
-
-class _PayGetRequestRequired(TypedDict):
-    orderId: str
-
-class PayGetRequest(_PayGetRequestRequired, total=False):
-    nonce: str
-
-class PayGetResponse(TypedDict, total=False):
-    appId: str
-    orderId: str
-    amount: float
-    vendor: str
-    method: str
-    customMessage: str
-    callbackUrl: str
-    callbackUrlStatus: str
-    callbackAt: str
-    disbursementId: str
-    disStatus: str
-    status: str
-    condition: str
-    createdAt: str
-    transactionRefId: str
-    qr: str
-    url: str
+from typing import Dict, Any, Union, Callable, List, Optional
+from .types import (
+    SDKOptions,
+    HandShakeRequest,
+    HandShakeResponse,
+    PaymentRequest,
+    PaymentResponse,
+    PayGetRequest,
+    PayGetResponse,
+    PayCancelRequest,
+    PayCancelResponse,
+    CallbackIncomingData
+)
 
 class MMPaySDK:
     def __init__(self, options: SDKOptions):
@@ -83,7 +23,7 @@ class MMPaySDK:
         self._publishable_key = options['publishableKey']
         self._secret_key = options['secretKey']
         self._api_base_url = options['apiBaseUrl'].rstrip('/')
-        self._is_sandbox = self._publishable_key.startswith('pk_test')
+        self._is_sandbox = '_test_' in self._publishable_key or '_test_' in self._secret_key
         self._btoken: Optional[str] = None
         self._listeners: Dict[str, List[Callable]] = {
             'tx:create': [],
@@ -143,7 +83,7 @@ class MMPaySDK:
         except requests.exceptions.RequestException as e:
             return {"error": str(e), "details": getattr(e.response, 'text', '')}
 
-    def pay(self, params: PaymentRequest) -> Dict[str, Any]:
+    def pay(self, params: PaymentRequest) -> Union[PaymentResponse, Dict[str, Any]]:
         path = "/payments/sandbox-create" if self._is_sandbox else "/payments/create"
         endpoint = f"{self._api_base_url}{path}"
         nonce = self._get_nonce()
@@ -184,6 +124,37 @@ class MMPaySDK:
 
     def get(self, params: PayGetRequest) -> Union[PayGetResponse, Dict[str, Any]]:
         path = "/payments/sandbox-get" if self._is_sandbox else "/payments/get"
+        endpoint = f"{self._api_base_url}{path}"
+        nonce = self._get_nonce()
+        xpayload: Dict[str, Any] = {
+            "orderId": params['orderId'],
+            "nonce": nonce
+        }
+        body_string = self._json_stringify(xpayload)
+        signature = self._generate_signature(body_string, nonce)
+        handshake_payload: HandShakeRequest = {
+            'orderId': str(xpayload['orderId']),
+            'nonce': str(xpayload['nonce'])
+        }
+        handshake_res = self.handshake(handshake_payload)
+        if 'error' in handshake_res:
+            return handshake_res
+        headers = {
+            'Authorization': f"Bearer {self._publishable_key}",
+            'X-Mmpay-Btoken': self._btoken or '',
+            'X-Mmpay-Nonce': nonce,
+            'X-Mmpay-Signature': signature,
+            'Content-Type': 'application/json',
+        }
+        try:
+            response = requests.post(endpoint, data=body_string, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except requests.exceptions.RequestException as e:
+            return {"error": str(e), "details": getattr(e.response, 'text', '')}
+
+    def cancel(self, params: PayCancelRequest) -> Union[PayCancelResponse, Dict[str, Any]]:
+        path = "/payments/sandbox-cancel" if self._is_sandbox else "/payments/cancel"
         endpoint = f"{self._api_base_url}{path}"
         nonce = self._get_nonce()
         xpayload: Dict[str, Any] = {

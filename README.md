@@ -27,6 +27,7 @@ To use the SDK, you need your App ID, Publishable Key, and Secret Key provided b
 | secretKey | str | Yes | Private key used for signing requests (HMAC). |
 | apiBaseUrl | str | Yes | The base URL for the MMPay API. |
 
+#### **Implementation**
 
 ```python
 from mmpay import MMPaySDK
@@ -38,14 +39,22 @@ options = {
     "apiBaseUrl": "https://xxx.myanmyanpay.com"
 }
 
-sdk = MMPaySDK(options)
+MMPay = MMPaySDK(options)
 ```
+----
 
 ## Usage
 
 ### 1. Payment Request Payload
 
-Passed to `sdk.pay(params)` or `sdk.sandbox_pay(params)`.
+#### **Method Signature**
+```python
+from mmpay.types import PaymentRequest
+payload: PaymentRequest = {}
+MMPay.pay(payload)
+```
+
+#### **Request Body** (`payload` structure)
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
@@ -65,11 +74,14 @@ Used inside the `items` list of a Payment Request.
 | `amount` | `float` | Yes | Price per unit. |
 | `quantity` | `int` | Yes | Quantity of the item. |
 
-### 2. Create a Payment
+
+#### **Implementation**
 
 ```python
+from mmpay.types import PaymentRequest
+
 try:
-    payment_request = {
+    pay_payload: PaymentRequest = {
         "orderId": "ORD-LIVE-98765",
         "amount": 5000,
         "callbackUrl": "https://your-site.com/webhook/mmpay",
@@ -83,31 +95,139 @@ try:
         ]
     }
 
-    response = sdk.pay(payment_request)
+    response = MMPay.pay(pay_payload)
     
     print(response.get('qr')) # this is your QR String [EMVCo String]
     print(response.get('orderId')) #this is your order ID
     print(response.get('transactionRefId')) #this is your QR Reference No
+    print(response.get('vendorQrRefId')) #this is your QR Reference No
     print(response.get('amount')) #this is your requested amount
 
 except Exception as e:
     print(e)
 ```
 
-### 3. Retrieve a Payment 
+#### **Response Body** Code (`201`)
 
+```json
+{
+  "orderId": "_trx_0012345",
+  "status": "PENDING",
+  "vendorQrRefId": "39233043003345",
+  "transactionRefId": "39233043003345", // This is deprecated - transactionRefId will show only after payment is confirmed
+  "amount": 2800,
+  "currency": "MMK",
+  "qr": "EMVco MMQR String => You_have_to_embed_as_qr_image_yourself"
+}
+```
+---
+
+
+### 2. Retrieve a Payment
+
+#### **Method Signature**
 ```python
+from mmpay.types import PayGetRequest
+payload: PayGetRequest = {}
+MMPay.get(payload)
+```
+
+#### **Request Body** (`payload` structure)
+
+The request body should be a JSON object containing the transaction details.
+
+| Field | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
+
+
+#### **Implementation**
+```python
+from mmpay.types import PayGetRequest
+
 try:
-    get_request = {
+    get_payload: PayGetRequest = {
         "orderId": "ORD-SANDBOX-001"
     }
 
-    response = sdk.get(get_request)
+    response = MMPay.get(get_payload)
     print(response)
 
 except Exception as e:
     print(e)
 ```
+
+#### **Response Body** Code (`200`)
+
+```json
+{
+  "orderId": "ORD-111111111",
+  "appId": "MMP3883483",
+  "amount": 1000,
+  "vendor": "KBZPay",
+  "method": "QR",
+  "customMessage": "",
+  "callbackUrl": "",
+  "callbackUrlAt": "JSDateObject",
+  "callbackUrlStatus": "SUCCESS",
+  "status": "SUCCESS", //  'PENDING' | 'SUCCESS' | 'FAILED' | 'REFUNDED' | 'CANCELLED' | 'EXPIRED';
+  "disbursementId": "289348734939",
+  "disStatus": "SUCCESS",
+  "condition": "TOUCHED", // TOUCHED | 'PRISTINE' | 'DIRTY' | 'EXPIRED'
+  "createdAt": "JSDateObject",
+  "transactionRefId": "939583046594",
+  "vendorQrRefId": "48309449034",
+  "qr": "EMVCo QR String::MMQR Standard",
+}
+```
+
+----
+
+### 3. Cancel a Payment 
+
+#### **Method Signature**
+```python
+from mmpay.types import PayCancelRequest
+payload: PayCancelRequest = {}
+MMPay.cancel(payload)
+```
+
+#### **Request Body** (`payload` structure)
+
+The request body should be a JSON object containing the transaction details.
+
+| Field | Type | Required | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| **`orderId`**         | `string` | **Yes**    | Your generated order ID for the order or system initiating the payment. | `"ORD-3983833"` |
+
+#### **Implementation**
+```python
+from mmpay.types import PayCancelRequest
+
+try:
+    cancel_payload: PayGetRequest = {
+        "orderId": "ORD-SANDBOX-001"
+    }
+
+    response = MMPay.cancel(cancel_payload)
+    print(response)
+
+except Exception as e:
+    print(e)
+```
+
+#### **Response Body** Code (`200`)
+```json
+{
+  "amount": 1000,
+  "orderId": "ORD-111111111",
+  "status": "CANCELLED",
+  "vendorQrRefId": "289348734939",
+}
+```
+
+----
+
 
 ### 4. Handling Webhooks
 
@@ -126,7 +246,7 @@ When you implement this method, our package automatically process the Hmac verif
 
 from mmpay.client import MMPaySDK
 
-sdk = MMPaySDK({
+MMPay = MMPaySDK({
     'appId': 'your_app_id',
     'publishableKey': 'pk_test_12345',
     'secretKey': 'your_secret_key',
@@ -134,6 +254,9 @@ sdk = MMPaySDK({
 })
 
 def handle_create(tx):
+    # if you are using browser plugin MMPay.showPaymentModal() 
+    # Verify your source of truth here
+    # if the amount does not match cancel the QR instantly, to avoid payload manipulation attacks
     print("Created:", tx.get('orderId'))
 
 def handle_success(tx):
@@ -160,15 +283,15 @@ def handle_unknown(tx):
 def handle_error(error):
     print("Error:", error)
 
-sdk.on_tx_create(handle_create)
-sdk.on_tx_success(handle_success)
-sdk.on_tx_fail(handle_fail)
-sdk.on_tx_refund(handle_refund)
-sdk.on_tx_cancel(handle_cancel)
-sdk.on_tx_expire(handle_expire)
-sdk.on_heartbeat(handle_heartbeat)
-sdk.on('tx:unknown', handle_unknown)
-sdk.on('error', handle_error)
+MMPay.on_tx_create(handle_create)
+MMPay.on_tx_success(handle_success)
+MMPay.on_tx_fail(handle_fail)
+MMPay.on_tx_refund(handle_refund)
+MMPay.on_tx_cancel(handle_cancel)
+MMPay.on_tx_expire(handle_expire)
+MMPay.on_heartbeat(handle_heartbeat)
+MMPay.on('tx:unknown', handle_unknown)
+MMPay.on('error', handle_error)
 
 
 @app.route('/webhooks/mmpay', methods=['POST'])
@@ -180,7 +303,7 @@ def mmpay_webhook():
     if not nonce or not signature:
         return jsonify({"error": "Missing headers"}), 400
 
-    sdk.listen(payload_str, nonce, signature)
+    MMPay.listen(payload_str, nonce, signature)
     
     return jsonify({"received": True}), 200
 
@@ -214,7 +337,7 @@ def mmpay_webhook():
     signature = request.headers.get('X-Mmpay-Signature')
 
     try:
-        is_valid = sdk.verify_cb(payload_str, nonce, signature)
+        is_valid = MMPay.verify_cb(payload_str, nonce, signature)
         
         if is_valid:
             return "Verified", 200
@@ -227,7 +350,7 @@ def mmpay_webhook():
 
 ## Error Codes
 
-### API Key Layer (SERVER SDK)
+### API Key Layer (SERVER Side)
 
 | Code | Description |
 | :--- | :--- |
@@ -238,7 +361,7 @@ def mmpay_webhook():
 | `KA0005` | IP Not whitelisted |
 | `429` | Rate limit hit (1000 req/min) |
 
-### JWT Layer (SERVER SDK)
+### JWT Layer (SERVER Side)
 
 | Code | Description |
 | :--- | :--- |
