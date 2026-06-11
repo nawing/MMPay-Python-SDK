@@ -2,14 +2,6 @@
 
 A Python client library for integrating with the MMPay Payment Gateway. This SDK is a direct port of the official Node.js SDK, providing utilities for payment creation, transaction retrieval, handshake authentication, and callback verification for technical architects and developers.
 
-## Features
-
-- Sandbox & Production Support: Dedicated methods for both environments.
-- Payment Creation & Retrieval: Endpoints to create payments and fetch transaction statuses.
-- HMAC SHA256 Signing: Automatic signature generation for request integrity.
-- Callback Verification: Utility to verify incoming webhooks from MMPay.
-- Type Definitions: Includes TypedDict definitions for clear payload structuring.
-
 ## ⬇️ 1. Installation
 
 ```bash 
@@ -368,7 +360,7 @@ def mmpay_webhook():
 
 ## 8. Error Codes
 
-### API Key Layer (SERVER Side)
+**HMac Layer (SERVER Side)**
 
 | Code | Description |
 | :--- | :--- |
@@ -379,12 +371,26 @@ def mmpay_webhook():
 | `KA0005` | IP Not whitelisted |
 | `429` | Rate limit hit (1000 req/min) |
 
-### JWT Layer (SERVER Side)
+**JWT Layer (SERVER Side)**
 
 | Code | Description |
 | :--- | :--- |
 | `BA001` | `Btoken` nonce token missing |
 | `BA002` | `Btoken` nonce mismatch |
+
+
+**Response Codes**
+
+| Code | Status | Description |
+| :--- | :--- | :--- |
+| **`201`** | Created | Transaction initiated successfully. Response contains QR code URL/details. |
+| **`401`** | Unauthorized | Invalid or missing Publishable Key. |
+| **`400`** | Bad Request | Missing required body fields (validated by schema, if implemented). |
+| **`503`** | Service Unavailable | Upstream payment API failed or is unreachable. |
+| **`500`** | Internal Server Error | General server error during payment initiation. |
+
+
+---
 
 ## License
 
