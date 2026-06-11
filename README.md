@@ -336,14 +336,6 @@ if __name__ == '__main__':
 
 When MyanMyanPay sends a callback to your `callbackUrl`[cite: 1], you must verify the request signature to ensure it is genuine. 
 
-#### **Incoming Headers**
-
-| Field Name | Type | Required | Description |
-| :--- | :--- | :--- | :--- |
-| `Content-Type` | `str` | Yes | `application/json` |
-| `X-Mmpay-Signature` | `str` | Yes | Generated HMAC signature |
-| `X-Mmpay-Nonce` | `str` | Yes | Unique nonce string |
-
 #### **Example Implementation With Flask**
 
 ```python
